@@ -91,6 +91,7 @@ src/
   index.ts           # unchanged
 scripts/
   sync-sgid-registry.ts   # one-shot fetch + transform, run manually
+  enrichment.ts           # hand-maintained per-layer gaps, caveats, useful_fields overrides
 docs/
   plan.md            # this file
 ```
@@ -107,6 +108,31 @@ Of the ~380 entries:
 - ~215 have an `openSgid` category and a usable AGOL FeatureServer URL — these become our registry.
 - ~165 are hosted externally, lack a `openSgid` prefix, or have no queryable service. We drop them and document the gap. They remain accessible via `arcgis_query_raw` if their URL is known.
 
+### What goes into the registry
+
+Each layer entry combines three sources:
+
+**1. From upstream (`downloadMetadata.ts`):**
+- `name` — display name
+- `steward` — the UGRC division or partner agency that owns the data
+- `url` — the AGOL FeatureServer/N URL
+- category assignment (`openSgid` prefix)
+
+**2. From the layer's own ArcGIS REST `?f=pjson` response (auto-extracted at sync time):**
+- `last_edit_date` — from `editingInfo.dataLastEditDate`. The single most important piece of freshness metadata; surfaced verbatim in tool descriptions.
+- `geometry_type` — Polygon, Point, etc.
+- `max_record_count` — usually 2000; informs pagination hints.
+- `extent` — bounding box of the data.
+- `field_summary` — just names + types (~50 bytes per field). Full schema with domain values stays out of the registry; `describe_layer` re-fetches it on demand.
+
+**3. From hand-curated `scripts/enrichment.ts` (sidecar file):**
+- `useful_fields` — the subset of fields a model should typically request, ordered by usefulness.
+- `gaps` — what this layer does **not** have, with pointers. Example: `parcels_lir.gaps = ["No owner names — those are county-level data, not in SGID. v0.3 will surface county portals; for now, the model should call arcgis_query_raw against the relevant county AGOL org."]`
+- `caveats` — known gotchas. Example: `wrlu.caveats = ["LUID is NOT stable across SURV_YEARs; filter by SURV_YEAR for time-series queries."]`
+- `time_field` — for temporal layers (WRLU's `SURV_YEAR`, parcels' assessment year, etc.).
+
+The enrichment file is the durable home for "things we've learned the hard way about this layer." It's how `query_cadastre`'s description can say *"NOT owner names; those are county-held"* — that fact lives in `enrichment.ts`, gets pulled into `gaps`, and surfaces in the tool description template.
+
 ### Sync flow
 
 ```
@@ -120,12 +146,20 @@ $ npm run sync-sgid-registry
   ↓
   filter: drop entries without (openSgid prefix && AGOL FeatureServer URL)
   ↓
+  for each surviving layer, GET <url>?f=pjson  (parallel, batched, retry on 5xx)
+    → extract last_edit_date, geometry_type, max_record_count, extent, field_summary
+  ↓
+  merge in hand-curated overrides from scripts/enrichment.ts
+    → useful_fields, gaps, caveats, time_field
+  ↓
   group by category prefix
   ↓
   write src/registry/sgid.ts
   ↓
   git diff — review, commit, deploy
 ```
+
+The pjson step adds ~30–60s to sync time (215 layers × ~200ms with batching). Failures on individual layers are logged but non-fatal — the layer keeps its upstream metadata and `last_edit_date: null`. Hand-running the script and reviewing the diff catches anything weird.
 
 The output is committed to the repo. This keeps deploys reproducible and offline-safe — a deploy at time T behaves identically at time T+1 day even if upstream changes.
 
@@ -153,7 +187,7 @@ If drift becomes a regular problem, automate with a scheduled GitHub Action that
 
 | Tool | Purpose |
 | --- | --- |
-| `describe_layer` | Schema summary for any layer key or FeatureServer URL. Use after picking a layer from a category tool. |
+| `describe_layer` | Full schema for any layer key or FeatureServer URL: fields with coded-value domains, current `last_edit_date` (re-fetched live), extent, plus hand-curated `gaps` and `caveats` from the registry. Use after picking a layer from a category tool to confirm freshness and learn its quirks. |
 | `aggregate_layer` | Server-side `groupBy` + `outStatistics`. Reach for it before paging features for headline numbers. |
 | `arcgis_query_raw` | Last-resort escape hatch. Description explicitly directs the model to category tools first. |
 | `list_capabilities` | Overview: returns category names, tool names, blurbs, and layer counts. The model's "what's available here?" entry point. |
@@ -168,9 +202,17 @@ Each tool takes:
 - `layer` — zod enum of that category's layer keys (the model sees the valid set directly in the schema).
 - Plus the same params v0.1's `query_layer` accepts: `where`, `geometry`, `bbox`, `spatial_relationship`, `out_fields`, `return_geometry`, `order_by`, `limit`, `offset`, `distinct`.
 
-Description template:
+Description template (compact — the tool list has ~28 of these, so each has to fit):
 
-> Query Utah {DisplayName} layers. {Blurb}. Available layers: {comma-separated layer keys}. GeoJSON in/out, WGS84. Use this instead of writing custom ArcGIS REST requests.
+> Query Utah {DisplayName} layers — {Blurb}. {Category-level gaps, if any, inline.} Available layers: {one short line per layer with key + freshness, e.g. "parcels_lir (assessor attrs, edited 2024-03-15)"}. Call `describe_layer(<key>)` for full schema, current freshness, and known caveats. Use this instead of writing custom ArcGIS REST requests.
+
+Concrete example for cadastre:
+
+> Query Utah Cadastre layers — parcels, taxation, zoning. **Does NOT include owner names** (those are county-held, not in SGID). Available layers: `parcels_lir` (statewide + assessor attributes, edited 2024-03-15), `parcels_basic` (geometry only, broader coverage, edited 2024-02-01), `tax_districts`, `municipal_boundaries`, … Call `describe_layer(<key>)` for full schema, current freshness, and known caveats. Use this instead of writing custom ArcGIS REST requests.
+
+Two signals doing work here:
+1. **Category-level gap inline** — the model sees *"NOT owner names"* before it commits to calling the tool. This is the fix for the Stratos-style failure mode.
+2. **Per-layer freshness in the description** — `edited 2024-03-15` lets the model judge fitness without a separate `describe_layer` call for simple queries. For anything analytical, it'll call `describe_layer` anyway and get the live `last_edit_date` plus full caveats.
 
 ### mapserv (7 tools)
 
@@ -238,6 +280,16 @@ All seven default `spatialReference=4326` in our wrapper (mapserv's native defau
 
 ---
 
+## Out of scope for v0.2
+
+v0.2 is scoped tightly to **state-level data** so we can validate the discovery model on a coherent dataset before expanding. Deferred to v0.3+:
+
+- **Federation across jurisdictions.** Utah GIS is federated: state (us), 29 counties, federal (BLM, USFS, etc.), tribal, utilities. v0.2 wraps only state SGID. The MCP must be **honest about this gap** — when a query needs county-held data (owner names being the canonical example), the relevant tool description and `describe_layer` response point to "v0.3 will surface county portals; for now, use `arcgis_query_raw` against the county AGOL org if you know the URL."
+- **County GIS portals.** No `utah_gis_directory` tool, no curated county registry, no county-level convenience tools.
+- **Generic ArcGIS server discovery.** No `discover_arcgis_server` tool. ArcGIS Online's `services.arcgis.com/<opaque-org-id>` pattern is genuinely uncrawlable without a curated jumping-off list — that list, and the tool that uses it, is v0.3 work.
+- **Live registry refresh.** No scheduled GitHub Action to keep the registry in sync. Manual `npm run sync-sgid-registry` is the v0.2 cadence.
+- **Cross-layer joins or chained-query helpers.** The model composes; we don't.
+
 ## Acceptance criteria
 
 A fresh agent with no prompting beyond the MCP connection should:
@@ -245,5 +297,6 @@ A fresh agent with no prompting beyond the MCP connection should:
 1. Answer *"how many acres of irrigated alfalfa in Utah in 2023?"* by calling `query_farming` (or `aggregate_layer` on the WRLU key) — **not** by writing Python.
 2. Answer *"what's the street address at 40.7608° N, 111.8910° W?"* by calling `reverse_geocode` — **not** by writing curl.
 3. Answer *"which parcels overlap this polygon?"* by calling `query_cadastre` with `parcels_lir` — **not** by composing a manual ArcGIS REST URL.
+4. **The Stratos test.** Answer *"who owns the parcels inside this polygon?"* (with a Box Elder County polygon) by **explicitly stating that owner names aren't in state data**, citing the gap surfaced by `query_cadastre`'s description or `describe_layer`'s `gaps` field, and recommending the v0.3 county-portal path (or falling back to `arcgis_query_raw` against `beco.maps.arcgis.com` if the agent knows the URL). The agent must **not** hallucinate that LIR contains owners and must **not** silently fail.
 
-If any of those three conversations fail the same way they currently do, the discovery story needs more work before tagging v0.2.
+If any of those four conversations fail the same way they currently do, the discovery story needs more work before tagging v0.2. #4 is the canonical regression test for the original pain.
