@@ -1,0 +1,12 @@
+# Local dev secrets for `wrangler dev`. Copy this file to `.dev.vars` and fill
+# in your key — `.dev.vars` is gitignored.
+#
+# For deployed Workers, set the same secret with:
+#   wrangler secret put UGRC_API_KEY
+#
+# Request a key at https://developer.mapserv.utah.gov. Required by the mapserv
+# tools (geocode_address, reverse_geocode, geocode_milepost, reverse_milepost,
+# search_sgid_via_mapserv, list_sgid_tables, list_sgid_fields). Tools short-
+# circuit with a clear error if it's unset.
+
+UGRC_API_KEY=your-key-here
