@@ -38,7 +38,8 @@ export interface AggregateLayerParams {
   limit: number;
 }
 
-function resolveLayerUrl(layer: string): string {
+// TODO Story 5: remove — v0.1 shim so legacy tools keep resolving URLs until cutover
+function resolveLegacyLayer(layer: string): string {
   if (layer.startsWith("http://") || layer.startsWith("https://")) {
     return layer.replace(/\/+$/, "");
   }
@@ -49,7 +50,7 @@ function resolveLayerUrl(layer: string): string {
   return entry.url;
 }
 
-async function arcgisJson(url: string, init: RequestInit): Promise<Record<string, unknown>> {
+export async function arcgisJson(url: string, init: RequestInit): Promise<Record<string, unknown>> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) {
@@ -88,7 +89,7 @@ async function arcgisJson(url: string, init: RequestInit): Promise<Record<string
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-function applySpatialFilter(
+export function applySpatialFilter(
   body: URLSearchParams,
   geometry: GeoJsonGeometry | undefined,
   bbox: [number, number, number, number] | undefined,
@@ -107,7 +108,7 @@ function applySpatialFilter(
 }
 
 export async function describeLayer(layer: string): Promise<unknown> {
-  const url = resolveLayerUrl(layer);
+  const url = resolveLegacyLayer(layer);
   const cached = SCHEMA_CACHE.get(url);
   if (cached) return cached;
 
@@ -148,7 +149,7 @@ function extractDomainValues(domain: unknown): string[] | undefined {
 }
 
 export async function queryLayer(params: QueryLayerParams): Promise<unknown> {
-  const url = resolveLayerUrl(params.layer);
+  const url = resolveLegacyLayer(params.layer);
 
   const body = new URLSearchParams();
   body.set("f", "geojson");
@@ -196,7 +197,7 @@ export async function queryLayer(params: QueryLayerParams): Promise<unknown> {
 }
 
 export async function aggregateLayer(params: AggregateLayerParams): Promise<unknown> {
-  const url = resolveLayerUrl(params.layer);
+  const url = resolveLegacyLayer(params.layer);
 
   const outStatistics = params.statistics.map((s) => ({
     statisticType: s.op,

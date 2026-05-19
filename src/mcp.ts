@@ -8,7 +8,7 @@ import {
   describeLayer,
   queryLayer,
   rawQuery,
-} from "./arcgis";
+} from "./arcgis-client";
 
 const coord = z.tuple([z.number(), z.number()]);
 
