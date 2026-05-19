@@ -27,6 +27,16 @@ Geometry I/O is always GeoJSON in WGS84 (EPSG:4326). ArcGIS handles the reprojec
 
 Hosted instance on Cloudflare Workers: `https://ugrc-mcp.ompwwcx2yz.workers.dev` — point an MCP client at `/mcp`. Unauthenticated and runs on my personal account, so please be nice: light, exploratory use is fine, but if you're hammering it or building something real on top, deploy your own (`npx wrangler deploy` — it's free-tier friendly).
 
+## Configuration
+
+Set the mapserv API key once per environment:
+
+- Local dev: add `UGRC_API_KEY=...` to `.dev.vars` (gitignored).
+- Deployed: `wrangler secret put UGRC_API_KEY`
+
+Request a key at https://developer.mapserv.utah.gov. Tools that need it
+short-circuit with a clear message if the secret is unset.
+
 ## Setup
 
 ```bash

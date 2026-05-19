@@ -14,5 +14,13 @@
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["UgrcMcp"] }
-  ]
+  ],
+  // UGRC_API_KEY is a Worker secret — never committed. Set via:
+  //   wrangler secret put UGRC_API_KEY          (deployed)
+  //   echo 'UGRC_API_KEY=...' >> .dev.vars       (local dev, gitignored)
+  // The vars block below is a dev-only placeholder so cf-typegen emits the type.
+  // Remove or override in production using `wrangler secret put`.
+  "vars": {
+    "UGRC_API_KEY": ""
+  }
 }
