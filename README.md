@@ -31,11 +31,17 @@ Hosted instance on Cloudflare Workers: `https://ugrc-mcp.ompwwcx2yz.workers.dev`
 
 Set the mapserv API key once per environment:
 
-- Local dev: add `UGRC_API_KEY=...` to `.dev.vars` (gitignored).
+- Local dev: copy `.dev.vars.example` to `.dev.vars` and fill in your key (`.dev.vars` is gitignored).
 - Deployed: `wrangler secret put UGRC_API_KEY`
 
 Request a key at https://developer.mapserv.utah.gov. Tools that need it
 short-circuit with a clear message if the secret is unset.
+
+Mapserv keys are issued with a Referer allow-list. The Worker sends a
+configurable `Referer` header on every mapserv request; the default
+(`UGRC_API_REFERER` in `wrangler.jsonc`) targets this repo's prod URL. If
+you self-deploy on a different `workers.dev` subdomain, override
+`UGRC_API_REFERER` so its value matches whatever pattern your key allows.
 
 ## Setup
 

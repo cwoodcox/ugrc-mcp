@@ -16,6 +16,14 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 export const MAPSERV_BASE = "https://api.mapserv.utah.gov";
 
 /**
+ * Default Referer header value sent with every mapserv request. Mapserv keys
+ * are issued with a referer allow-list pattern; the wrapper must send a value
+ * that matches. Override per-deployment by setting UGRC_API_REFERER.
+ */
+export const MAPSERV_DEFAULT_REFERER =
+  "https://ugrc-mcp.ompwwcx2yz.workers.dev/mcp";
+
+/**
  * Verbatim error string returned (as a thrown Error) by every tool wrapper
  * when env.UGRC_API_KEY is unset or empty. Matches plan.md §"mapserv (7 tools)"
  * and story F8.1 exactly.
@@ -41,9 +49,8 @@ export const MISSING_KEY_MSG =
 async function mapservGet<T>(
   path: string,
   query: Record<string, string | number | undefined>,
-  _env: Env,
+  env: Env,
 ): Promise<T> {
-  // Build query string, omitting undefined values
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined) {
@@ -52,21 +59,19 @@ async function mapservGet<T>(
   }
 
   const url = `${MAPSERV_BASE}${path}?${params.toString()}`;
-
-  // For debug logging, build a URL without the apiKey parameter
-  const safeParams = new URLSearchParams(params);
-  safeParams.delete("apiKey");
-  // console.debug(`mapservGet ${path}?${safeParams.toString()}`);
+  const referer = env.UGRC_API_REFERER || MAPSERV_DEFAULT_REFERER;
 
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) {
-      // 100ms, 200ms backoff — mirrors arcgis.ts pattern
       await new Promise<void>((r) => setTimeout(r, 100 * 2 ** (attempt - 1)));
     }
     let response: Response;
     try {
-      response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      response = await fetch(url, {
+        headers: { Referer: referer },
+        signal: AbortSignal.timeout(30_000),
+      });
     } catch (err) {
       lastError = err;
       continue;

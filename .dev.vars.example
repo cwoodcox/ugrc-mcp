@@ -10,3 +10,9 @@
 # circuit with a clear error if it's unset.
 
 UGRC_API_KEY=your-key-here
+
+# Optional. Referer header value sent to mapserv — must match the allow-list
+# pattern registered for your UGRC_API_KEY. Defaults to the prod URL in
+# wrangler.jsonc; override here if your key is allow-listed for a different
+# origin (e.g. a fork on a different workers.dev subdomain).
+# UGRC_API_REFERER=https://your-worker.your-subdomain.workers.dev/mcp
