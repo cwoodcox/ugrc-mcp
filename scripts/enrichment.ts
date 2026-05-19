@@ -27,8 +27,11 @@ export const ENRICHMENT: Record<string, EnrichmentEntry> = {
   // ── Water Related Land Use (WRLU) ─────────────────────────────────────────
   // Upstream: openSgid = "planning.water_related_land_use"
   // v0.1 key: "wrlu" — keep stable via layer_key_override
+  // manual_category overrides openSgid-derived "planning" → "farming" so that
+  // list_farming returns this layer (plan.md AC #1).
   "ugrc/wrlu": {
     layer_key_override: "wrlu",
+    manual_category: "farming",
     useful_fields: [
       "Landuse",
       "CropGroup",

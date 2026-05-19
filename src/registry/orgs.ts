@@ -29,9 +29,12 @@ export const ORGS = {
  * share one implementation.
  *
  * @param org    - org handle from ORGS, e.g. "ugrc"
- * @param service_path - path under url_base, e.g. "WaterRelatedLandUse/FeatureServer/0"
+ * @param service_path - path under url_base, OR a fully-qualified https:// URL
+ *   (e.g. for layers hosted outside the org's AGOL, like land_ownership on
+ *   gis.trustlands.utah.gov). Absolute URLs are passed through unchanged.
  * @returns full URL with no trailing slash
  */
 export function resolveLayerUrl(org: OrgHandle, service_path: string): string {
+  if (/^https?:\/\//.test(service_path)) return service_path;
   return `${ORGS[org].url_base}/${service_path}`;
 }

@@ -532,6 +532,7 @@ async function main() {
   // 4. Filter and classify entries
   let dropCount = 0;
   let manualPlacementCount = 0;
+  let overrideCategoryCount = 0;
   const parsedLayers: ParsedLayer[] = [];
   const keysSeen = new Set<string>(); // for collision detection
 
@@ -556,7 +557,19 @@ async function main() {
         dropCount++;
         continue;
       }
-      category = catSlug;
+      // Check if enrichment has a manual_category that should override the
+      // openSgid-derived category. manual_category always wins when present.
+      const enrichKeyForFs = fsIdToEnrichKey[featureServiceId];
+      const enrichEntry = enrichKeyForFs ? ENRICHMENT[enrichKeyForFs] : undefined;
+      if (enrichEntry?.manual_category) {
+        console.log(
+          `  [override] ${featureServiceId}: openSgid category "${catSlug}" → manual_category "${enrichEntry.manual_category}"`,
+        );
+        category = enrichEntry.manual_category;
+        overrideCategoryCount++;
+      } else {
+        category = catSlug;
+      }
     } else if (isUgrcHosted) {
       // UGRC-hosted but no openSgid — check if there's a manual_category in enrichment
       const enrichKeyForFs = fsIdToEnrichKey[featureServiceId];
@@ -746,6 +759,7 @@ async function main() {
   console.log(`  pjson failures: ${pjsonFailures}`);
   console.log(`  upstream drops: ${dropCount}`);
   console.log(`  manual placements: ${manualPlacementCount}`);
+  console.log(`  category overrides: ${overrideCategoryCount}`);
   console.log(`  categories: ${categoriesSorted.length}`);
 
   // 9. Write output
