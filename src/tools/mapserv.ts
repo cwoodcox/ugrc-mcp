@@ -321,11 +321,14 @@ export async function listSgidTables(
   env: Env,
 ): Promise<unknown> {
   if (!env.UGRC_API_KEY) throw new Error(MISSING_KEY_MSG);
-  const path =
-    input.category !== undefined
-      ? `/api/v1/info/featureClassNames/${encodeURIComponent(input.category)}`
-      : `/api/v1/info/featureClassNames`;
-  return mapservGet(path, { apiKey: env.UGRC_API_KEY }, env);
+  return mapservGet(
+    "/api/v1/info/featureClassNames",
+    {
+      apiKey: env.UGRC_API_KEY,
+      ...(input.category !== undefined ? { category: input.category } : {}),
+    },
+    env,
+  );
 }
 
 /**
