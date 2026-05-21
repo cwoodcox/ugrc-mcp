@@ -15,17 +15,18 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["UgrcMcp"] }
   ],
-  // UGRC_API_KEY is a Worker secret — never committed. Set via:
+  // UGRC_API_KEY is a Worker secret — set via:
   //   wrangler secret put UGRC_API_KEY          (deployed)
   //   echo 'UGRC_API_KEY=...' >> .dev.vars       (local dev, gitignored)
-  // The vars block below is a dev-only placeholder so cf-typegen emits the type.
-  // Remove or override in production using `wrangler secret put`.
+  // It is intentionally NOT in `vars` below: `vars` are pushed on every
+  // deploy and overwrite same-named secrets, so a `vars` entry would
+  // clobber the secret. The type is supplied by src/env.d.ts so tsc
+  // still typechecks without cf-typegen needing to see the secret.
   //
   // UGRC_API_REFERER is not secret — it's the Referer header value mapserv
   // checks against the key's allow-list pattern. Default targets this
   // repo's prod URL; self-deployers override per environment.
   "vars": {
-    "UGRC_API_KEY": "",
     "UGRC_API_REFERER": "https://ugrc-mcp.ompwwcx2yz.workers.dev/mcp"
   }
 }
