@@ -106,7 +106,7 @@ export const SGID: SgidRegistry = {
         name: "Utah Municipal Boundaries",
         service_path: "UtahMunicipalBoundaries/FeatureServer/0",
         geometry_type: "esriGeometryPolygon",
-        last_edit_date: "2026-05-19",
+        last_edit_date: "2026-05-21",
         max_record_count: 2000,
         extent: { xmin: -12658817.705400001, ymin: 4439103.882200003, xmax: -12184819.5714, ymax: 5160777.7478, spatialReference: { wkid: 102100, latestWkid: 3857 } },
         field_summary: [
@@ -280,7 +280,7 @@ export const SGID: SgidRegistry = {
   "cadastre": {
     name: "cadastre",
     blurb: "Parcels, taxation, zoning",
-    category_gaps: "Owner names are NOT in SGID — they're county-held. v0.3 will surface county portals; for now, fall back to arcgis_raw against the relevant county AGOL org.",
+    category_gaps: "NOT owner names — those are county-held, not in SGID. v0.3 will surface county portals; for now, fall back to arcgis_raw against the relevant county AGOL org.",
     layers: [
       {
         org: "ugrc",
@@ -1290,8 +1290,9 @@ export const SGID: SgidRegistry = {
         name: "Utah Morgan County Parcels",
         service_path: "Parcels_Morgan/FeatureServer/0",
         geometry_type: "esriGeometryPolygon",
-        last_edit_date: "2026-03-06",
+        last_edit_date: "2026-05-20",
         max_record_count: 2000,
+        extent: { xmin: -12451651.1043, ymin: 4980732.627599999, xmax: -12400604.510200001, ymax: 5043872.266099997, spatialReference: { wkid: 102100, latestWkid: 3857 } },
         field_summary: [
           { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
           { name: "FIPS", type: "esriFieldTypeDouble", alias: "FIPS" },
@@ -2254,7 +2255,7 @@ export const SGID: SgidRegistry = {
         name: "Utah Wasatch County Parcels",
         service_path: "Parcels_Wasatch/FeatureServer/0",
         geometry_type: "esriGeometryPolygon",
-        last_edit_date: "2026-03-06",
+        last_edit_date: "2026-05-20",
         max_record_count: 2000,
         extent: { xmin: -12418810.7881, ymin: 4851401.646899998, xmax: -12345484.8716, ymax: 4965791.854000002, spatialReference: { wkid: 102100, latestWkid: 3857 } },
         field_summary: [
@@ -3553,7 +3554,7 @@ export const SGID: SgidRegistry = {
         name: "Utah Oil Gas Wells",
         service_path: "https://services.arcgis.com/ZzrwjTRez6FJiOq4/arcgis/rest/services/viewAGRC_WellData_Surf/FeatureServer/0",
         geometry_type: "esriGeometryPoint",
-        last_edit_date: "2026-05-18",
+        last_edit_date: "2026-05-21",
         max_record_count: 2000,
         extent: { xmin: -12693165.7688, ymin: 4439220.468099996, xmax: -12138672.2837, ymax: 5160116.972400002, spatialReference: { wkid: 102100, latestWkid: 3857 } },
         field_summary: [
@@ -3963,7 +3964,7 @@ export const SGID: SgidRegistry = {
         name: "Utah DAQ Air Emissions Inventory",
         service_path: "DAQAirEmissionsInventory/FeatureServer/0",
         geometry_type: "esriGeometryPoint",
-        last_edit_date: "2026-05-18",
+        last_edit_date: "2026-05-21",
         max_record_count: 2000,
         field_summary: [
           { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
@@ -4248,7 +4249,7 @@ export const SGID: SgidRegistry = {
         name: "Utah DEQ TIER2",
         service_path: "TIER2/FeatureServer/0",
         geometry_type: "esriGeometryPoint",
-        last_edit_date: "2026-05-18",
+        last_edit_date: "2026-05-19",
         max_record_count: 2000,
         field_summary: [
           { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
@@ -6506,7 +6507,7 @@ export const SGID: SgidRegistry = {
         name: "Utah Roads",
         service_path: "UtahRoads/FeatureServer/0",
         geometry_type: "esriGeometryPolyline",
-        last_edit_date: "2026-05-07",
+        last_edit_date: "2026-05-21",
         max_record_count: 2000,
         field_summary: [
           { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },

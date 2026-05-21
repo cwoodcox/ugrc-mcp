@@ -47,9 +47,9 @@ function buildCategoryDescription(categoryKey: string, entry: SgidCategory): str
   return (
     `Discover Utah ${displayName} layers — ${blurb}.${gapSentence} ` +
     `Returns a catalog with per-layer freshness, fields, and known gaps. ` +
+    `Layers (${count}): ${keyList}. ` +
     `Pair with \`arcgis_query\` / \`arcgis_aggregate\` to pull data. ` +
-    `If the layer you need isn't here, try \`find_layer({ query })\` for the uncategorized ~528 UGRC services. ` +
-    `Layers (${count}): ${keyList}.`
+    `If the layer you need isn't here, try \`find_layer({ query })\` for the uncategorized ~528 UGRC services.`
   );
 }
 

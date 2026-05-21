@@ -182,7 +182,7 @@ export const CATEGORY_OVERRIDES: Record<
   cadastre: {
     blurb: "Parcels, taxation, zoning",
     category_gaps:
-      "Owner names are NOT in SGID — they're county-held. v0.3 will surface county portals; for now, fall back to arcgis_raw against the relevant county AGOL org.",
+      "NOT owner names — those are county-held, not in SGID. v0.3 will surface county portals; for now, fall back to arcgis_raw against the relevant county AGOL org.",
   },
   water: {
     blurb: "Streams, lakes, hydrography",

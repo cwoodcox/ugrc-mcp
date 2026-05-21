@@ -97,8 +97,9 @@ function extractServiceUrl(item: Record<string, unknown>): string {
     if (/\/(FeatureServer|MapServer)\s*$/.test(rawUrl)) {
       return rawUrl.replace(/\/+$/, "") + "/0";
     }
-    // Otherwise return as-is (may be a service root — callers can append /FeatureServer/0)
-    return rawUrl;
+    // Non-REST URLs (item detail pages, Hub viewer URLs) aren't usable by
+    // arcgis_query. Fall through to the links[] fallback rather than
+    // surfacing an unqueryable URL.
   }
 
   // Fallback: try links array for a FeatureServer link
