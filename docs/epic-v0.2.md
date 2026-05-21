@@ -18,7 +18,7 @@ Final surface: **33 tools** across three coverage tiers — categorized core (23
 
 ## Non-goals (in scope for v0.3+, not this epic)
 
-- Federation across counties / federal / tribal / utilities (only `ugrc` registered).
+- Federation across counties / federal / tribal / utilities (only `ugrc` registered). This includes **sibling state orgs hosted outside UGRC AGOL**: layers on `webmaps.geology.utah.gov` (UGS — Utah Geological Survey: faults, landslides, mineral occurrences) and the broader `gis.trustlands.utah.gov` catalog beyond `land_ownership` (SITLA — Ownership_Coal, Ownership_Mineral, Ownership_Oil_Gas, Ownership_Surface, Land_Ownership_County_Acres, …). The single `land_ownership` entry is in v0.2 only because SGID's upstream registry catalogs it; nothing else from those hosts is reachable via `list_<category>` or `find_layer` (Hub Search is org-pinned to `ORGS.ugrc.agol_id`). Two natural v0.3 patterns: add additional orgs to `ORGS` (UGS, SITLA) with their own `agol_id` and let `find_layer` fan out, or per-layer additions via `manual_category` in `scripts/enrichment.ts`.
 - Generic ArcGIS server discovery (`discover_arcgis_server`).
 - MCP resources surface (`sgid://...`) — discovery is tools-only in v0.2.
 - Scheduled registry refresh (manual `npm run sync-sgid-registry` cadence).
