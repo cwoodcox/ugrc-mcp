@@ -11,6 +11,7 @@
  */
 
 import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { arcgisJson, applySpatialFilter } from "../arcgis-client";
 import type { GeoJsonGeometry } from "../geometry";
 import { ORGS, resolveLayerUrl } from "../registry/orgs";
@@ -384,4 +385,182 @@ export async function arcgisRaw(input: ArcgisRawInput): Promise<unknown> {
     body,
     headers: { "content-type": "application/x-www-form-urlencoded" },
   });
+}
+
+// ─── MCP registration ───────────────────────────────────────────────────────
+
+function text(value: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
+  };
+}
+
+// Target picker: surfaces nice param names via .describe() rather than a union.
+// At handler entry we narrow back to the discriminated { org, layer } | { url }.
+const orgField = z
+  .enum(["ugrc"])
+  .optional()
+  .describe(
+    "Registered org handle (v0.2: \"ugrc\"). Required with `layer`; omit when using `url`.",
+  );
+
+const layerField = z
+  .string()
+  .optional()
+  .describe(
+    "Short layer key from a list_<category> tool (e.g. \"wrlu\", \"parcels_lir\"). Required with `org`; omit when using `url`.",
+  );
+
+const urlField = z
+  .string()
+  .url()
+  .optional()
+  .describe(
+    "Full FeatureServer/MapServer layer URL ending in /N (typically returned by find_layer). Mutually exclusive with { org, layer }.",
+  );
+
+function narrowTarget(params: {
+  org?: "ugrc";
+  layer?: string;
+  url?: string;
+}): { org: "ugrc"; layer: string } | { url: string } {
+  if (params.url && (params.org || params.layer)) {
+    throw new Error(
+      "Pass EITHER { url } OR { org, layer } — not both.",
+    );
+  }
+  if (params.url) return { url: params.url };
+  if (params.org && params.layer) {
+    return { org: params.org, layer: params.layer };
+  }
+  throw new Error(
+    "Pass { org, layer } for a cataloged layer (see list_<category>) or { url } for a find_layer result.",
+  );
+}
+
+export function registerArcgisTools(server: McpServer): void {
+  server.tool(
+    "arcgis_query",
+    ARCGIS_QUERY_DESCRIPTION,
+    {
+      org: orgField,
+      layer: layerField,
+      url: urlField,
+      where: z
+        .string()
+        .default("1=1")
+        .describe("SQL-style WHERE clause. Defaults to all rows."),
+      geometry: geometrySchema.optional(),
+      bbox: bboxSchema.optional(),
+      spatial_relationship: spatialRel.describe(
+        "Spatial filter relationship. Defaults to 'intersects'.",
+      ),
+      out_fields: z
+        .array(z.string())
+        .default(["*"])
+        .describe("Fields to return. Defaults to all (`*`)."),
+      return_geometry: z
+        .boolean()
+        .default(true)
+        .describe("Whether to include geometry in the result. Set false for attribute-only reads."),
+      order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(2000)
+        .default(500)
+        .describe("Max features per page (1–2000)."),
+      offset: z.number().int().min(0).default(0).describe("Pagination offset."),
+      distinct: z
+        .boolean()
+        .default(false)
+        .describe("Return distinct attribute combinations. Forces return_geometry=false."),
+    },
+    async (raw) => {
+      const target = narrowTarget(raw);
+      const merged = {
+        ...target,
+        where: raw.where,
+        geometry: raw.geometry,
+        bbox: raw.bbox,
+        spatial_relationship: raw.spatial_relationship,
+        out_fields: raw.out_fields,
+        return_geometry: raw.return_geometry,
+        order_by: raw.order_by,
+        limit: raw.limit,
+        offset: raw.offset,
+        distinct: raw.distinct,
+      } as ArcgisQueryInput;
+      return text(await arcgisQuery(merged));
+    },
+  );
+
+  server.tool(
+    "arcgis_aggregate",
+    ARCGIS_AGGREGATE_DESCRIPTION,
+    {
+      org: orgField,
+      layer: layerField,
+      url: urlField,
+      where: z.string().optional().describe("SQL-style WHERE clause."),
+      geometry: geometrySchema.optional(),
+      bbox: bboxSchema.optional(),
+      spatial_relationship: spatialRel.describe(
+        "Spatial filter relationship. Defaults to 'intersects'.",
+      ),
+      group_by: z
+        .array(z.string())
+        .default([])
+        .describe("Fields to group by. Empty array returns a single overall summary row."),
+      statistics: z
+        .array(statSchema)
+        .min(1)
+        .describe(
+          "Statistics to compute. Each entry: { field, op: sum|count|min|max|avg|var|stddev, alias }.",
+        ),
+      order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
+      limit: z.number().int().min(1).default(1000).describe("Max group rows to return."),
+    },
+    async (raw) => {
+      const target = narrowTarget(raw);
+      const merged = {
+        ...target,
+        where: raw.where,
+        geometry: raw.geometry,
+        bbox: raw.bbox,
+        spatial_relationship: raw.spatial_relationship,
+        group_by: raw.group_by,
+        statistics: raw.statistics,
+        order_by: raw.order_by,
+        limit: raw.limit,
+      } as ArcgisAggregateInput;
+      return text(await arcgisAggregate(merged));
+    },
+  );
+
+  server.tool(
+    "arcgis_raw",
+    ARCGIS_RAW_DESCRIPTION,
+    {
+      url: z
+        .string()
+        .url()
+        .describe(
+          "Full FeatureServer/MapServer service or layer URL. The endpoint name (e.g. /query) is appended via `endpoint`.",
+        ),
+      endpoint: z
+        .string()
+        .default("query")
+        .describe(
+          "Endpoint name appended after `url` (e.g. 'query', 'queryAttachments'). Defaults to 'query'.",
+        ),
+      params: z
+        .record(z.string(), z.unknown())
+        .describe(
+          "Raw ArcGIS REST params, passed through after URL-encoding. Set `f` to control format.",
+        ),
+    },
+    async (raw) => text(await arcgisRaw(raw as ArcgisRawInput)),
+  );
 }
