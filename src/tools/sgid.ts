@@ -115,12 +115,20 @@ function text(value: unknown) {
 export function registerSgidTools(server: McpServer): void {
   for (const [categoryKey, entry] of Object.entries(SGID)) {
     const description = buildCategoryDescription(categoryKey, entry);
+    const displayName = entry.name
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
     const snapshot = { categoryKey, entry }; // capture loop variable
 
-    server.tool(
+    server.registerTool(
       `list_${snapshot.categoryKey}`,
-      description,
-      {},
+      {
+        title: `Utah ${displayName} layers`,
+        description,
+        inputSchema: {},
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      },
       async () => text(buildCategoryResponse(snapshot.categoryKey, snapshot.entry)),
     );
   }

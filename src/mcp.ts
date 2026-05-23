@@ -22,7 +22,12 @@ const INSTRUCTIONS =
 
 export class UgrcMcp extends McpAgent<Env> {
   server = new McpServer(
-    { name: "ugrc-mcp", version: "0.2.0" },
+    {
+      name: "ugrc-mcp",
+      title: "Utah Geospatial Research Center",
+      version: "0.2.0",
+      websiteUrl: "https://gis.utah.gov",
+    },
     { instructions: INSTRUCTIONS },
   );
 

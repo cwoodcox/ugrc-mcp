@@ -234,25 +234,33 @@ function text(value: unknown) {
  * Called by Story 5 from mcp.ts — do not call from mcp.ts in this story.
  */
 export function registerHubSearchTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     "find_layer",
-    // Full description verbatim from story spec §"Tool description copy"
-    "Search UGRC's full ArcGIS Hub catalog live (~763 Feature Services) for layers matching a free-text query. " +
-      "Use this **Tier 2** entry point when no `list_<category>` tool surfaces the layer you need — " +
-      "there are ~528 UGRC services that aren't in the categorized core. " +
-      "Returns matching layers with `{ name, description, url, last_edit_date, snippet, type }`. " +
-      "The returned `url` is ready to pass directly to `arcgis_query({ url, ... })` / `arcgis_aggregate({ url, ... })`. " +
-      "Results are capped at 50. " +
-      "Example: `find_layer({ query: \"springs\" })` surfaces the NHD Springs layer for hydrography questions `list_water` (6 layers) doesn't cover.",
     {
-      query: z.string().min(1).describe("Free-text search query, e.g. \"springs\" or \"parcels salt lake\""),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(50)
-        .default(25)
-        .describe("Maximum results to return (1–50, default 25)."),
+      title: "Search UGRC Hub catalog",
+      // Full description verbatim from story spec §"Tool description copy"
+      description:
+        "Search UGRC's full ArcGIS Hub catalog live (~763 Feature Services) for layers matching a free-text query. " +
+        "Use this **Tier 2** entry point when no `list_<category>` tool surfaces the layer you need — " +
+        "there are ~528 UGRC services that aren't in the categorized core. " +
+        "Returns matching layers with `{ name, description, url, last_edit_date, snippet, type }`. " +
+        "The returned `url` is ready to pass directly to `arcgis_query({ url, ... })` / `arcgis_aggregate({ url, ... })`. " +
+        "Results are capped at 50. " +
+        "Example: `find_layer({ query: \"springs\" })` surfaces the NHD Springs layer for hydrography questions `list_water` (6 layers) doesn't cover.",
+      inputSchema: {
+        query: z
+          .string()
+          .min(1)
+          .describe("Free-text search query, e.g. \"springs\" or \"parcels salt lake\""),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(25)
+          .describe("Maximum results to return (1–50, default 25)."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (params) => text(await findLayer(params)),
   );

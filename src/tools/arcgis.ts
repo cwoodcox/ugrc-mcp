@@ -439,43 +439,47 @@ function narrowTarget(params: {
 }
 
 export function registerArcgisTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     "arcgis_query",
-    ARCGIS_QUERY_DESCRIPTION,
     {
-      org: orgField,
-      layer: layerField,
-      url: urlField,
-      where: z
-        .string()
-        .default("1=1")
-        .describe("SQL-style WHERE clause. Defaults to all rows."),
-      geometry: geometrySchema.optional(),
-      bbox: bboxSchema.optional(),
-      spatial_relationship: spatialRel.describe(
-        "Spatial filter relationship. Defaults to 'intersects'.",
-      ),
-      out_fields: z
-        .array(z.string())
-        .default(["*"])
-        .describe("Fields to return. Defaults to all (`*`)."),
-      return_geometry: z
-        .boolean()
-        .default(true)
-        .describe("Whether to include geometry in the result. Set false for attribute-only reads."),
-      order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(2000)
-        .default(500)
-        .describe("Max features per page (1–2000)."),
-      offset: z.number().int().min(0).default(0).describe("Pagination offset."),
-      distinct: z
-        .boolean()
-        .default(false)
-        .describe("Return distinct attribute combinations. Forces return_geometry=false."),
+      title: "Query features",
+      description: ARCGIS_QUERY_DESCRIPTION,
+      inputSchema: {
+        org: orgField,
+        layer: layerField,
+        url: urlField,
+        where: z
+          .string()
+          .default("1=1")
+          .describe("SQL-style WHERE clause. Defaults to all rows."),
+        geometry: geometrySchema.optional(),
+        bbox: bboxSchema.optional(),
+        spatial_relationship: spatialRel.describe(
+          "Spatial filter relationship. Defaults to 'intersects'.",
+        ),
+        out_fields: z
+          .array(z.string())
+          .default(["*"])
+          .describe("Fields to return. Defaults to all (`*`)."),
+        return_geometry: z
+          .boolean()
+          .default(true)
+          .describe("Whether to include geometry in the result. Set false for attribute-only reads."),
+        order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(2000)
+          .default(500)
+          .describe("Max features per page (1–2000)."),
+        offset: z.number().int().min(0).default(0).describe("Pagination offset."),
+        distinct: z
+          .boolean()
+          .default(false)
+          .describe("Return distinct attribute combinations. Forces return_geometry=false."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (raw) => {
       const target = narrowTarget(raw);
@@ -496,31 +500,35 @@ export function registerArcgisTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "arcgis_aggregate",
-    ARCGIS_AGGREGATE_DESCRIPTION,
     {
-      org: orgField,
-      layer: layerField,
-      url: urlField,
-      where: z.string().optional().describe("SQL-style WHERE clause."),
-      geometry: geometrySchema.optional(),
-      bbox: bboxSchema.optional(),
-      spatial_relationship: spatialRel.describe(
-        "Spatial filter relationship. Defaults to 'intersects'.",
-      ),
-      group_by: z
-        .array(z.string())
-        .default([])
-        .describe("Fields to group by. Empty array returns a single overall summary row."),
-      statistics: z
-        .array(statSchema)
-        .min(1)
-        .describe(
-          "Statistics to compute. Each entry: { field, op: sum|count|min|max|avg|var|stddev, alias }.",
+      title: "Aggregate features",
+      description: ARCGIS_AGGREGATE_DESCRIPTION,
+      inputSchema: {
+        org: orgField,
+        layer: layerField,
+        url: urlField,
+        where: z.string().optional().describe("SQL-style WHERE clause."),
+        geometry: geometrySchema.optional(),
+        bbox: bboxSchema.optional(),
+        spatial_relationship: spatialRel.describe(
+          "Spatial filter relationship. Defaults to 'intersects'.",
         ),
-      order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
-      limit: z.number().int().min(1).default(1000).describe("Max group rows to return."),
+        group_by: z
+          .array(z.string())
+          .default([])
+          .describe("Fields to group by. Empty array returns a single overall summary row."),
+        statistics: z
+          .array(statSchema)
+          .min(1)
+          .describe(
+            "Statistics to compute. Each entry: { field, op: sum|count|min|max|avg|var|stddev, alias }.",
+          ),
+        order_by: z.array(z.string()).optional().describe("ORDER BY fields."),
+        limit: z.number().int().min(1).default(1000).describe("Max group rows to return."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (raw) => {
       const target = narrowTarget(raw);
@@ -539,27 +547,31 @@ export function registerArcgisTools(server: McpServer): void {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "arcgis_raw",
-    ARCGIS_RAW_DESCRIPTION,
     {
-      url: z
-        .string()
-        .url()
-        .describe(
-          "Full FeatureServer/MapServer service or layer URL. The endpoint name (e.g. /query) is appended via `endpoint`.",
-        ),
-      endpoint: z
-        .string()
-        .default("query")
-        .describe(
-          "Endpoint name appended after `url` (e.g. 'query', 'queryAttachments'). Defaults to 'query'.",
-        ),
-      params: z
-        .record(z.string(), z.unknown())
-        .describe(
-          "Raw ArcGIS REST params, passed through after URL-encoding. Set `f` to control format.",
-        ),
+      title: "ArcGIS REST passthrough",
+      description: ARCGIS_RAW_DESCRIPTION,
+      inputSchema: {
+        url: z
+          .string()
+          .url()
+          .describe(
+            "Full FeatureServer/MapServer service or layer URL. The endpoint name (e.g. /query) is appended via `endpoint`.",
+          ),
+        endpoint: z
+          .string()
+          .default("query")
+          .describe(
+            "Endpoint name appended after `url` (e.g. 'query', 'queryAttachments'). Defaults to 'query'.",
+          ),
+        params: z
+          .record(z.string(), z.unknown())
+          .describe(
+            "Raw ArcGIS REST params, passed through after URL-encoding. Set `f` to control format.",
+          ),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (raw) => text(await arcgisRaw(raw as ArcgisRawInput)),
   );
