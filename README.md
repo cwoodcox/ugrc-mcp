@@ -1,5 +1,6 @@
 # ugrc-mcp
 
+[![SafeSkill 93/100](https://img.shields.io/badge/SafeSkill-93%2F100_Verified%20Safe-brightgreen)](https://safeskill.dev/scan/cwoodcox-ugrc-mcp)
 An MCP server for Utah's State Geographic Information Database (SGID) and the UGRC Web API. Wraps ArcGIS Feature Services + mapserv so an LLM can discover layers, query features, and aggregate without writing Python or curl.
 
 Runs on Cloudflare Workers. Built with `@modelcontextprotocol/sdk` and the Cloudflare Agents SDK (`agents/mcp`). MCP session state lives in a Durable Object; business logic is stateless.
