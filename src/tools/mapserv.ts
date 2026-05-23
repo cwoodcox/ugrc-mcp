@@ -358,53 +358,90 @@ export async function listSgidFields(
  * @param env     Worker Env — closed over by each tool handler.
  */
 export function registerMapservTools(server: McpServer, env: Env): void {
-  server.tool(
+  const readOnly = { readOnlyHint: true, openWorldHint: true };
+
+  server.registerTool(
     "geocode_address",
-    "Forward geocode a Utah street address to a coordinate. Returns location, match score, and address grid. Coordinates returned in WGS84 (EPSG:4326) by default.",
-    GeocodeAddressInput.shape,
+    {
+      title: "Geocode address",
+      description:
+        "Forward geocode a Utah street address to a coordinate. Returns location, match score, and address grid. Coordinates returned in WGS84 (EPSG:4326) by default.",
+      inputSchema: GeocodeAddressInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await geocodeAddress(input as GeocodeAddressInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "reverse_geocode",
-    "Reverse geocode a WGS84 coordinate to the nearest Utah street address. Returns the matched address, grid, score, and offset distance.",
-    ReverseGeocodeInput.shape,
+    {
+      title: "Reverse geocode",
+      description:
+        "Reverse geocode a WGS84 coordinate to the nearest Utah street address. Returns the matched address, grid, score, and offset distance.",
+      inputSchema: ReverseGeocodeInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await reverseGeocode(input as ReverseGeocodeInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "geocode_milepost",
-    "Resolve a UDOT route + milepost to a WGS84 coordinate. Use for route-anchored locations (incident reports, asset inventories).",
-    GeocodeMilepostInput.shape,
+    {
+      title: "Geocode milepost",
+      description:
+        "Resolve a UDOT route + milepost to a WGS84 coordinate. Use for route-anchored locations (incident reports, asset inventories).",
+      inputSchema: GeocodeMilepostInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await geocodeMilepost(input as GeocodeMilepostInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "reverse_milepost",
-    "Find the nearest UDOT route + milepost to a WGS84 coordinate. Optionally constrain to a specific route.",
-    ReverseMilepostInput.shape,
+    {
+      title: "Reverse milepost",
+      description:
+        "Find the nearest UDOT route + milepost to a WGS84 coordinate. Optionally constrain to a specific route.",
+      inputSchema: ReverseMilepostInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await reverseMilepost(input as ReverseMilepostInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "search_sgid_via_mapserv",
-    "SQL-style attribute search against a single SGID table via the mapserv `/search` endpoint. Use for predicates AGOL `/query` can't express 1:1; for typical reads, prefer `arcgis_query`.",
-    SearchSgidViaMapservInput.shape,
+    {
+      title: "Mapserv attribute search",
+      description:
+        "SQL-style attribute search against a single SGID table via the mapserv `/search` endpoint. Use for predicates AGOL `/query` can't express 1:1; for typical reads, prefer `arcgis_query`.",
+      inputSchema: SearchSgidViaMapservInput.shape,
+      annotations: readOnly,
+    },
     async (input) =>
       text(await searchSgidViaMapserv(input as SearchSgidViaMapservInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "list_sgid_tables",
-    "List mapserv-recognized SGID table names, optionally filtered to one SGID category. Pair with `list_sgid_fields` then `search_sgid_via_mapserv`.",
-    ListSgidTablesInput.shape,
+    {
+      title: "Mapserv: list tables",
+      description:
+        "List mapserv-recognized SGID table names, optionally filtered to one SGID category. Pair with `list_sgid_fields` then `search_sgid_via_mapserv`.",
+      inputSchema: ListSgidTablesInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await listSgidTables(input as ListSgidTablesInput, env)),
   );
 
-  server.tool(
+  server.registerTool(
     "list_sgid_fields",
-    "List the columns of a single SGID table as known to mapserv. Use to build `return_values` and `predicate` for `search_sgid_via_mapserv`.",
-    ListSgidFieldsInput.shape,
+    {
+      title: "Mapserv: list table fields",
+      description:
+        "List the columns of a single SGID table as known to mapserv. Use to build `return_values` and `predicate` for `search_sgid_via_mapserv`.",
+      inputSchema: ListSgidFieldsInput.shape,
+      annotations: readOnly,
+    },
     async (input) => text(await listSgidFields(input as ListSgidFieldsInput, env)),
   );
 }

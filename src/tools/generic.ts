@@ -300,30 +300,44 @@ function text(value: unknown) {
 }
 
 export function registerGenericTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     "list_capabilities",
-    LIST_CAPABILITIES_DESCRIPTION,
-    {},
+    {
+      title: "Capabilities overview",
+      description: LIST_CAPABILITIES_DESCRIPTION,
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
     async () => text(listCapabilities()),
   );
 
-  server.tool(
+  server.registerTool(
     "describe_layer",
-    DESCRIBE_LAYER_DESCRIPTION,
     {
-      org: z
-        .enum(["ugrc"])
-        .optional()
-        .describe("Registered org handle (v0.2: \"ugrc\"). Required with `layer`; omit if using `url`."),
-      layer: z
-        .string()
-        .optional()
-        .describe("Short layer key from list_<category> (e.g. \"wrlu\"). Required with `org`; omit if using `url`."),
-      url: z
-        .string()
-        .url()
-        .optional()
-        .describe("Full FeatureServer/MapServer layer URL ending in /N (typically from find_layer). Mutually exclusive with { org, layer }."),
+      title: "Describe layer schema",
+      description: DESCRIBE_LAYER_DESCRIPTION,
+      inputSchema: {
+        org: z
+          .enum(["ugrc"])
+          .optional()
+          .describe(
+            "Registered org handle (v0.2: \"ugrc\"). Required with `layer`; omit if using `url`.",
+          ),
+        layer: z
+          .string()
+          .optional()
+          .describe(
+            "Short layer key from list_<category> (e.g. \"wrlu\"). Required with `org`; omit if using `url`.",
+          ),
+        url: z
+          .string()
+          .url()
+          .optional()
+          .describe(
+            "Full FeatureServer/MapServer layer URL ending in /N (typically from find_layer). Mutually exclusive with { org, layer }.",
+          ),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (params) => {
       const input = normalizeDescribeInput(params);
